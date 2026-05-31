@@ -103,3 +103,32 @@ Conclusion:
 - Non-performance result fields are consistent with previous behavior.
 - Timing differs (native faster), but consistency checks remain stable.
 
+## New Randomized Round/Direction Test
+
+Added files:
+- library/tests/solve_board/random_round_direction_prediction_test.cpp
+- library/tests/solve_board/BUILD.bazel (new cc_test target)
+
+Test design:
+- Randomly generate complete legal deals.
+- Try all 4 opening directions (N/E/S/W leader variants).
+- Generate legal full-play traces per direction.
+- Compare DDS AnalysePlayPBN prediction with independently reconstructed
+	SolveBoardPBN "actual" result at selected checkpoints:
+	- after first card exposed (cards_played = 1)
+	- every full-trick boundary (cards_played = 4, 8, ..., 48)
+- Scaled volume: generated deal count increased 10x (16 -> 160), and total
+  comparisons are guaranteed >= 1000.
+
+Command:
+- bazelisk test //library/tests/solve_board:random_round_direction_prediction_test --test_output=all
+
+Measured result:
+- prediction_match_stats: matched=8320 compared=8320 rate=1
+- Test status: PASS (1/1)
+
+Conclusion:
+- In this randomized multi-round, multi-direction test, DDS prediction and
+	reconstructed actual values were fully consistent (100% match rate) under
+	10x scaled generation volume and 1000+ comparisons.
+

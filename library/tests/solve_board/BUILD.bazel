@@ -25,3 +25,15 @@ cc_test(
         "@googletest//:gtest_main",
     ],
 )
+
+cc_test(
+    name = "random_round_direction_prediction_test",
+    size = "small",
+    srcs = [
+        "random_round_direction_prediction_test.cpp",
+    ],
+    deps = [
+        "//library/src:testable_dds",
+        "@googletest//:gtest_main",
+    ],
+)
