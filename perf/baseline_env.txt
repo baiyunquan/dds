@@ -1,0 +1,9 @@
+CPU: 13th Gen Intel(R) Core(TM) i5-13490F
+Cores/Threads: 10 / 16
+BaseClockMHz: 2500
+RAM: 32 GB
+OS: Microsoft Windows 11 Pro
+Compiler: MSVC 19.44.35226
+Bazelisk: v1.29.0
+Bazel: 9.1.0
+Build note: Bazel on Windows required setting BAZEL_VC=C:\Program Files\Microsoft Visual Studio\2022\Community\VC in terminal session.

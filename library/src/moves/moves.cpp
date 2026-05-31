@@ -11,6 +11,7 @@
 #include <cstdlib>
 #include <fstream>
 #include <iomanip>
+#include <immintrin.h>
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -31,6 +32,40 @@ using std::setw;
 using std::string;
 using std::stringstream;
 using std::to_string;
+
+namespace {
+
+auto initialize_removed_ranks(
+  const unsigned short rank_in_suit[DDS_HANDS][DDS_SUITS],
+  int removed_ranks[DDS_SUITS]) -> void
+{
+#if defined(__AVX2__)
+  const auto load_row = [&](const int h) {
+    const __m128i row16 = _mm_loadl_epi64(
+      reinterpret_cast<const __m128i *>(&rank_in_suit[h][0]));
+    return _mm256_cvtepu16_epi32(row16);
+  };
+
+  __m256i row_xor = _mm256_xor_si256(load_row(0), load_row(1));
+  row_xor = _mm256_xor_si256(row_xor, load_row(2));
+  row_xor = _mm256_xor_si256(row_xor, load_row(3));
+
+  alignas(32) unsigned int lanes[8] = {};
+  _mm256_store_si256(reinterpret_cast<__m256i *>(lanes), row_xor);
+
+  for (int s = 0; s < DDS_SUITS; s++)
+    removed_ranks[s] = static_cast<int>(0xffffu ^ lanes[s]);
+#else
+  for (int s = 0; s < DDS_SUITS; s++)
+    removed_ranks[s] = 0xffff;
+
+  for (int h = 0; h < DDS_HANDS; h++)
+    for (int s = 0; s < DDS_SUITS; s++)
+      removed_ranks[s] ^= rank_in_suit[h][s];
+#endif
+}
+
+} // namespace
 
 #ifdef DDS_MOVES
 #define MG_REGISTER(a, b) lastCall[currTrick][b] = a
@@ -122,12 +157,7 @@ auto Moves::Init(const int tricks, const int relStartHand,
   }
 
   // 0x1ffff would be enough, but this is for compatibility.
-  for (int s = 0; s < DDS_SUITS; s++)
-    track[tricks].removed_ranks[s] = 0xffff;
-
-  for (int h = 0; h < DDS_HANDS; h++)
-    for (int s = 0; s < DDS_SUITS; s++)
-      track[tricks].removed_ranks[s] ^= rank_in_suit[h][s];
+  initialize_removed_ranks(rank_in_suit, track[tricks].removed_ranks);
 
   for (int n = 0; n < relStartHand; n++) {
     int s = initialSuits[n];

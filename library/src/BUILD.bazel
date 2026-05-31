@@ -1,4 +1,4 @@
-load("//:CPPVARIABLES.bzl", "DDS_CPPOPTS", "DDS_LINKOPTS", "DDS_LOCAL_DEFINES")
+load("//:CPPVARIABLES.bzl", "DDS_CPPOPTS", "DDS_LINKOPTS", "DDS_LOCAL_DEFINES", "DDS_NATIVE_EXTRA_OPTS")
 load("@rules_cc//cc:defs.bzl", "cc_library")
 
 external_headers = [
@@ -27,7 +27,7 @@ cc_library(
     srcs = ["//library/src:dds_sources"],
     hdrs = ["//library/src:dds_headers"],
     includes = ["."],
-    copts = DDS_CPPOPTS,
+    copts = DDS_CPPOPTS + DDS_NATIVE_EXTRA_OPTS,
     linkopts = DDS_LINKOPTS,
     local_defines = DDS_LOCAL_DEFINES,
     visibility = ["//visibility:public"],
@@ -41,6 +41,7 @@ cc_library(
         "//library/src/moves:moves",
         "//library/src/system",
         "//library/src/solver_context:solver_context",
+        "@onetbb//:tbb",
     ],
 )
 
@@ -63,7 +64,7 @@ cc_library(
     srcs = ["//library/src:testable_dds_sources"],
     hdrs = ["//library/src:testable_dds_headers"],
     includes = ["."],
-    copts = DDS_CPPOPTS,
+    copts = DDS_CPPOPTS + DDS_NATIVE_EXTRA_OPTS,
     linkopts = DDS_LINKOPTS,
     local_defines = DDS_LOCAL_DEFINES,
     include_prefix = "dds",
@@ -86,6 +87,7 @@ cc_library(
         "//library/src/moves:moves",
         "//library/src/system",
         "//library/src/solver_context:solver_context",
+        "@onetbb//:tbb",
     ],
 )
 
@@ -112,6 +114,7 @@ cc_library(
         "//library/src/moves:moves",
         "//library/src/system:system_util_log",
         "//library/src/solver_context:solver_context_log",
+        "@onetbb//:tbb",
     ],
 )
 
@@ -137,6 +140,7 @@ cc_library(
         "//library/src/moves:moves",
         "//library/src/system:system_util_stats",
         "//library/src/solver_context:solver_context_stats",
+        "@onetbb//:tbb",
     ],
 )
 

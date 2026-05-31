@@ -8,10 +8,47 @@
 */
 
 #include <algorithm>
+#include <immintrin.h>
 
 #include "quick_tricks.hpp"
 #include <lookup_tables/lookup_tables.hpp>
 #include <solver_context/solver_context.hpp>
+
+namespace {
+
+auto has_ruff_extension_candidate(
+  const unsigned char lengths[DDS_HANDS][DDS_SUITS],
+  const int hand,
+  const int partner_hand,
+  const int trump) -> bool
+{
+#if defined(__AVX2__)
+  const auto own_u32 = *reinterpret_cast<const unsigned int *>(&lengths[hand][0]);
+  const auto part_u32 = *reinterpret_cast<const unsigned int *>(&lengths[partner_hand][0]);
+
+  const __m128i own_v = _mm_cvtsi32_si128(static_cast<int>(own_u32));
+  const __m128i part_v = _mm_cvtsi32_si128(static_cast<int>(part_u32));
+  const __m128i zero = _mm_setzero_si128();
+
+  const __m128i own_nonzero = _mm_cmpgt_epi8(own_v, zero);
+  const __m128i part_zero = _mm_cmpeq_epi8(part_v, zero);
+  const __m128i candidates = _mm_and_si128(own_nonzero, part_zero);
+
+  int mask = _mm_movemask_epi8(candidates) & 0xF;
+  mask &= ~(1 << trump);
+  return mask != 0;
+#else
+  for (int s = 0; s < DDS_SUITS; s++) {
+    if ((s != trump) &&
+        (lengths[hand][s] > 0) &&
+        (lengths[partner_hand][s] == 0))
+      return true;
+  }
+  return false;
+#endif
+}
+
+} // namespace
 
 
 int QtricksLeadHandNT(
@@ -311,18 +348,10 @@ int QuickTricks(
            the trump suit. */
 
         int sum = std::max(countOwn, countPart);
-        for (int s = 0; s < DDS_SUITS; s++)
-        {
-          if ((sum > 0) &&
-              (s != trump) &&
-              (countOwn >= countPart) &&
-              (len[hand][s] > 0) &&
-              (len[partner[hand]][s] == 0))
-          {
-            sum++;
-            break;
-          }
-        }
+        if ((sum > 0) &&
+            (countOwn >= countPart) &&
+            has_ruff_extension_candidate(len, hand, partner[hand], trump))
+          sum++;
         /* If the additional trick by ruffing causes a cutoff.
            (qtricks not incremented.) */
         if (sum >= cutoff)

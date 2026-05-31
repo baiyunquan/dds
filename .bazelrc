@@ -45,3 +45,6 @@ build:tsan --linkopt=-fsanitize=thread
 build:tsan --strip=never
 build:tsan --features=dbg
 build:tsan --compilation_mode=dbg
+
+# Host-CPU-tuned build flags.
+build:native --define=native=true

@@ -11,7 +11,9 @@
 #include <atomic>
 #include <chrono>
 #include <thread>
-#include <vector>
+
+#include <tbb/parallel_for.h>
+#include <tbb/task_arena.h>
 
 #include "solve_board.hpp"
 #include <solver_if.hpp>
@@ -47,41 +49,40 @@ auto solve_all_boards_n(
   const int nthreads = std::max(1,
     std::min(static_cast<int>(std::thread::hardware_concurrency()), n));
 
-  std::atomic<int> next_board{0};
   std::atomic<int> first_error{0};
-
-  auto worker = [&] {
-    for (;;) {
-      const int bno = next_board.fetch_add(1, std::memory_order_relaxed);
-      if (bno >= n || first_error.load(std::memory_order_relaxed) != 0)
-        break;
-
-      FutureTricks fut;
-      const auto t0 = std::chrono::steady_clock::now();
-      const int res = SolveBoard(
-        bds.deals[bno], bds.target[bno], bds.solutions[bno],
-        bds.mode[bno], &fut, 0);
-      auto dur = std::chrono::duration_cast<std::chrono::milliseconds>(
-        std::chrono::steady_clock::now() - t0).count();
-      if (dur < 0) dur = 0;
-      scheduler.SetBoardTime(bno, static_cast<int>(dur));
-
-      if (res == 1)
-        solved.solved_board[bno] = fut;
-      else {
-        int expected = 0;
-        first_error.compare_exchange_strong(
-          expected, res, std::memory_order_relaxed);
-      }
-    }
-  };
 
   START_BLOCK_TIMER;
   {
-    std::vector<std::jthread> threads;
-    threads.reserve(static_cast<unsigned>(nthreads));
-    for (int i = 0; i < nthreads; ++i)
-      threads.emplace_back(worker);
+    tbb::task_arena arena(nthreads);
+    arena.execute([&] {
+      tbb::parallel_for(
+        tbb::blocked_range<int>(0, n),
+        [&](const tbb::blocked_range<int>& range) {
+          for (int bno = range.begin(); bno < range.end(); ++bno) {
+            if (first_error.load(std::memory_order_relaxed) != 0)
+              return;
+
+            FutureTricks fut;
+            const auto t0 = std::chrono::steady_clock::now();
+            const int res = SolveBoard(
+              bds.deals[bno], bds.target[bno], bds.solutions[bno],
+              bds.mode[bno], &fut, 0);
+            auto dur = std::chrono::duration_cast<std::chrono::milliseconds>(
+              std::chrono::steady_clock::now() - t0).count();
+            if (dur < 0) dur = 0;
+            scheduler.SetBoardTime(bno, static_cast<int>(dur));
+
+            if (res == 1)
+              solved.solved_board[bno] = fut;
+            else {
+              int expected = 0;
+              first_error.compare_exchange_strong(
+                expected, res, std::memory_order_relaxed);
+            }
+          }
+        }
+      );
+    });
   }
   END_BLOCK_TIMER;
 

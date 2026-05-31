@@ -900,16 +900,30 @@ auto analyse_later_board(
       lowerbound,
       upperbound;
 
+  // Increase prediction depth for AnalysePlay by allowing a small backoff
+  // around the hint. This improves robustness when hint direction is noisy
+  // in complex positions while keeping the null-window search fast.
+  const int prediction_backoff = (ini_depth >= 24 ? 2 : 1);
+
   if (hintDir == 0)
   {
-    lowerbound = hint;
+    lowerbound = hint - prediction_backoff;
+    if (lowerbound < 0)
+      lowerbound = 0;
     upperbound = 13;
   }
   else
   {
     lowerbound = 0;
-    upperbound = hint;
+    upperbound = hint + prediction_backoff;
+    if (upperbound > 13)
+      upperbound = 13;
   }
+
+  if (guess < lowerbound)
+    guess = lowerbound;
+  else if (guess > upperbound)
+    guess = upperbound;
 
   do
   {

@@ -72,6 +72,20 @@ config_setting(
     define_values = {"asan": "true"},
 )
 
+# Enable native CPU tuning via --define=native=true
+config_setting(
+    name = "native_cpu",
+    define_values = {"native": "true"},
+)
+
+config_setting(
+    name = "native_cpu_windows",
+    define_values = {"native": "true"},
+    constraint_values = [
+        "@platforms//os:windows",
+    ],
+)
+
 
 load("@rules_cc//cc:defs.bzl", "cc_library")
 

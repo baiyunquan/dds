@@ -94,3 +94,10 @@ DDS_SCHEDULER_DEFINE = select({
     "//:scheduler": ["DDS_SCHEDULER"],
     "//conditions:default": [],
 })
+
+# Enable host-CPU-tuned code generation via --define=native=true.
+DDS_NATIVE_EXTRA_OPTS = select({
+    "//:native_cpu_windows": ["/arch:AVX2"],
+    "//:native_cpu": ["-march=native"],
+    "//conditions:default": [],
+})

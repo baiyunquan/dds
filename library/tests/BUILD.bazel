@@ -1,5 +1,5 @@
 load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_test")
-load("//:CPPVARIABLES.bzl", "DDS_CPPOPTS", "DDS_LINKOPTS", "DDS_LOCAL_DEFINES", "DDS_SCHEDULER_DEFINE")
+load("//:CPPVARIABLES.bzl", "DDS_CPPOPTS", "DDS_LINKOPTS", "DDS_LOCAL_DEFINES", "DDS_SCHEDULER_DEFINE", "DDS_NATIVE_EXTRA_OPTS")
 
 # Test utility sources (glob used for convenience; excludes integration/context equivalence tests)
 filegroup(
@@ -18,7 +18,7 @@ filegroup(
 cc_binary(
     name = "dtest",
     srcs = [":test_sources"],
-    copts = DDS_CPPOPTS,
+    copts = DDS_CPPOPTS + DDS_NATIVE_EXTRA_OPTS,
     linkopts = DDS_LINKOPTS,
     local_defines = DDS_LOCAL_DEFINES + DDS_SCHEDULER_DEFINE,
     deps = [
